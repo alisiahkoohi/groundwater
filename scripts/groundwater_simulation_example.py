@@ -8,13 +8,14 @@ np.random.seed(42)
 
 def simulate_groundwater_eq(size=256, num_samples=3, threshold=-1):
     # Sample random fields for u(x).
-    u_samples = GaussianRandomField(2, size, alpha=3, tau=3).sample(num_samples)
+    u_samples = GaussianRandomField(2, size, alpha=2, tau=4).sample(num_samples)
     if threshold > 0:
         u_samples[u_samples >= 0] = 12
         u_samples[u_samples < 0] = threshold
 
     # Zero forcing term f(x).
-    f = np.zeros((size, size))
+    # f = np.zeros((size, size))
+    f = np.ones((size, size))
 
     # Setup Groundwater equation problem
     groundwater_eq = GroundwaterEquation(size)
@@ -28,7 +29,7 @@ def simulate_groundwater_eq(size=256, num_samples=3, threshold=-1):
 
     # Plot results.
     plot_fields(
-        u_samples,
+        [np.exp(_) for _ in u_samples],
         [f"Input u(x) {i+1}" for i in range(num_samples)],
         "Input Fields u(x)",
         contour=True,
@@ -43,4 +44,4 @@ def simulate_groundwater_eq(size=256, num_samples=3, threshold=-1):
 
 
 if __name__ == "__main__":
-    simulate_groundwater_eq(size=40, num_samples=3)
+    simulate_groundwater_eq(size=256, num_samples=3)

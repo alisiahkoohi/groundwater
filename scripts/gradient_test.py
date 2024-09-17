@@ -72,12 +72,17 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
             f_perturbed - f0 - h * np.dot(dx.reshape(-1), g.reshape(-1))
         )
         print(
-            f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, gdx = {h*np.dot(dx.reshape(-1), g.reshape(-1)):.5e}")
+            f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, gdx = {h*np.dot(dx.reshape(-1), g.reshape(-1)):.5e}"
+        )
 
         errors_first_order.append(err1)
         errors_second_order.append(err2)
-        rate_first_order.append(errors_first_order[j] / errors_first_order[max(0, j-1)])
-        rate_second_order.append(errors_second_order[j] / errors_second_order[max(0, j-1)])
+        rate_first_order.append(
+            errors_first_order[j] / errors_first_order[max(0, j - 1)]
+        )
+        rate_second_order.append(
+            errors_second_order[j] / errors_second_order[max(0, j - 1)]
+        )
 
         print(
             f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, Second-order error = {err2:.5e} First-order rate = {rate_first_order[j]:.5e}, Second-order rate = {rate_second_order[j]:.5e}"
@@ -91,11 +96,11 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
 
 # Example usage:
 if __name__ == "__main__":
-    size = 40
-    epsilon = 1e0
+    size = 128
+    epsilon = 5e0
 
     # Randomly sample the true input field and initial guess
-    u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(2)[0]
+    u_true = GaussianRandomField(2, size, alpha=2, tau=4).sample(1)[0]
 
     # Smooth initial guess by smoothing the true field using a Gaussian filter
     from scipy.ndimage import gaussian_filter
@@ -103,6 +108,7 @@ if __name__ == "__main__":
     u0 = gaussian_filter(u_true, sigma=5)
 
     # Forcing term f(x) (zero for simplicity)
+    # f = np.zeros((size, size))
     f = np.ones((size, size))
 
     # Setup the Groundwater equation problem
@@ -137,7 +143,7 @@ if __name__ == "__main__":
 
     # Make start at error
     h = [errors_first_order[0] * 0.5**i for i in range(10)]
-    h2 = [errors_second_order[0] * 0.5**(2*i) for i in range(10)]
+    h2 = [errors_second_order[0] * 0.5 ** (2 * i) for i in range(10)]
 
     # Plot the errors (log-log scale)
     plt.semilogy(errors_first_order, label="First-order error", base=2)

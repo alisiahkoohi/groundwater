@@ -15,7 +15,7 @@ def plot_fields(fields, titles, suptitle, contour=False):
         axes = [axes]
     for ax, field, title in zip(axes, fields, titles):
         im = ax.imshow(
-            np.exp(field),
+            field,
             interpolation="lanczos",
             origin="lower",
             cmap="Blues_r",
@@ -25,7 +25,7 @@ def plot_fields(fields, titles, suptitle, contour=False):
         # Add contour plot if contour=True
         if contour:
             cs = ax.contour(
-                np.exp(field),
+                field,
                 colors="red",
                 alpha=1.0,
                 linewidths=1,

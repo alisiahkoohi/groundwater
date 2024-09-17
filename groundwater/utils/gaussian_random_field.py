@@ -111,7 +111,8 @@ class GaussianRandomField:
         field = fft.ifftn(coeff).real
 
         # Normalize the field to have 0.5 maximum
-        field /= np.max(field) / 2
+        field /= np.max(field)
+        field *= 0.5
         return field
 
 
