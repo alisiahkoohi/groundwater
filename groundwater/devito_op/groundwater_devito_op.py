@@ -45,7 +45,7 @@ class GroundwaterEquation:
             self.f_adj,
         )
 
-        self.gradient = TimeFunction(
+        self.gradient = Function(
             name="gradient", grid=self.grid, space_order=2
         )
 
@@ -67,11 +67,11 @@ class GroundwaterEquation:
             # p(x)|x2=0 = x1
             Eq(p[t + 1, x, 0], x * self.grid.spacing[0]),
             # p(x)|x2=1 = 1 - x1
-            Eq(p[t + 1, x, self.size - 1], 1.0 - x * self.grid.spacing[0]),
+            Eq(p[t + 1, x, y.symbolic_max], 1.0 - x * self.grid.spacing[0]),
             # ∂p(x)/∂x1|x1=0 = 0
-            Eq(p[t + 1, 0, y], p[t + 1, 1, y]),
+            Eq(p[t + 1, -1, y], p[t + 1, 0, y]),
             # ∂p(x)/∂x1|x1=1 = 0
-            Eq(p[t + 1, self.size - 1, y], p[t + 1, self.size - 2, y]),
+            Eq(p[t + 1, x.symbolic_max, y], p[t + 1, x.symbolic_max + 1, y]),
         ]
 
         return Operator([update] + bc)
@@ -94,11 +94,11 @@ class GroundwaterEquation:
         # ∂λ(x)/∂x1|x1=0 = ∂λ(x)/∂x1|x1=1.
         bc_adj = [
             Eq(lambda_adj[t + 1, x, 0], 0),
-            Eq(lambda_adj[t + 1, x, self.grid.shape[1] - 1], 0),
+            Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
             Eq(lambda_adj[t + 1, 0, y], lambda_adj[t + 1, 1, y]),
             Eq(
-                lambda_adj[t + 1, self.grid.shape[0] - 1, y],
-                lambda_adj[t + 1, self.grid.shape[0] - 2, y],
+                lambda_adj[t + 1, x.symbolic_max, y],
+                lambda_adj[t + 1, x.symbolic_max + 1, y],
             ),
         ]
 
@@ -136,31 +136,20 @@ class GroundwaterEquation:
 
     def compute_gradient(self, u0, residual, p_fwd):
         # Compute the gradient: ∇_u J = e^u ∇λ · ∇p
-        gradient = np.zeros((self.size, self.size), dtype=np.float32)
-        # initialize_function(self.gradient, gradient, 0)
-        self.gradient.data[:] = gradient
+        self.gradient.data.fill(0.0)
 
         lambda_adj = self.eval_adj_op(u0, residual, return_array=False)
 
-        lambda_adj_spatial = Function(
-            name="lambda_adj_spatial", grid=self.grid, space_order=2
-        )
-        initialize_function(lambda_adj_spatial, lambda_adj.data[-1], 0)
-
-        p_fwd_spatial = Function(
-            name="p_fwd_spatial", grid=self.grid, space_order=2
-        )
-        initialize_function(p_fwd_spatial, p_fwd.data[0], 0)
-
         # e^u ∇λ · ∇p
-        grad_lambda = grad(lambda_adj_spatial)
-        grad_p = grad(p_fwd_spatial)
+        t = self.grid.stepping_dim
+        grad_lambda = grad(lambda_adj, shift=-0.5)._subs(t, 0)
+        grad_p = grad(p_fwd, shift=0.5)._subs(t, 0)
 
         gradient_eq = Eq(
-            self.gradient, exp(self.u) * (grad_lambda.adjoint() * grad_p)
+            self.gradient, - exp(self.u) * (grad_lambda.dot(grad_p))
         )
         op_gradient = Operator(gradient_eq)
 
-        op_gradient(time=NUM_PSEUDO_TIMESTEPS)
+        op_gradient()
 
-        return self.gradient.data[0]
+        return self.gradient.data

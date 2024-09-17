@@ -53,6 +53,9 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
     errors_first_order = []
     errors_second_order = []
 
+    rate_first_order = []
+    rate_second_order = []
+
     # Compute the objective value and gradient for the initial guess u0
     f0, g = objective(u0, groundwater_eq, f, d_obs)
 
@@ -68,12 +71,16 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
         err2 = np.abs(
             f_perturbed - f0 - h * np.dot(dx.reshape(-1), g.reshape(-1))
         )
+        print(
+            f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, gdx = {h*np.dot(dx.reshape(-1), g.reshape(-1)):.5e}")
 
         errors_first_order.append(err1)
         errors_second_order.append(err2)
+        rate_first_order.append(errors_first_order[j] / errors_first_order[max(0, j-1)])
+        rate_second_order.append(errors_second_order[j] / errors_second_order[max(0, j-1)])
 
         print(
-            f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, Second-order error = {err2:.5e}"
+            f"Step {j + 1}: Step size = {h:.5e}, First-order error = {err1:.5e}, Second-order error = {err2:.5e} First-order rate = {rate_first_order[j]:.5e}, Second-order rate = {rate_second_order[j]:.5e}"
         )
 
         # Halve the step size
@@ -85,6 +92,7 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
 # Example usage:
 if __name__ == "__main__":
     size = 40
+    epsilon = 1e-2
 
     # Randomly sample the true input field and initial guess
     u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(1)[0]
@@ -92,7 +100,7 @@ if __name__ == "__main__":
     # Smooth initial guess by smoothing the true field using a Gaussian filter
     from scipy.ndimage import gaussian_filter
 
-    u0 = gaussian_filter(u_true, sigma=3)
+    u0 = gaussian_filter(u_true, sigma=5)
 
     # Forcing term f(x) (zero for simplicity)
     f = np.zeros((size, size))
@@ -111,12 +119,18 @@ if __name__ == "__main__":
 
     # Perform gradient test
     errors_first_order, errors_second_order = gradient_test(
-        groundwater_eq, u0, f, d_obs, dx
+        groundwater_eq, u0, f, d_obs, dx, epsilon=epsilon, maxiter=10
     )
 
+    # Make start at error
+    h = [errors_first_order[0] * 0.5**i for i in range(10)]
+    h2 = [errors_second_order[0] * 0.5**(2*i) for i in range(10)]
+
     # Plot the errors (log-log scale)
-    plt.loglog(errors_first_order, label="First-order error")
-    plt.loglog(errors_second_order, label="Second-order error")
+    plt.semilogy(errors_first_order, label="First-order error", base=2)
+    plt.semilogy(errors_second_order, label="Second-order error", base=2)
+    plt.semilogy(h, label="h^1", base=2)
+    plt.semilogy(h2, label="h^2", base=2)
     plt.xlabel("Iteration")
     plt.ylabel("Error")
     plt.legend()
