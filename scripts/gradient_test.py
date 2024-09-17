@@ -92,24 +92,37 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
 # Example usage:
 if __name__ == "__main__":
     size = 40
-    epsilon = 1e-2
+    epsilon = 1e0
 
     # Randomly sample the true input field and initial guess
-    u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(1)[0]
+    u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(2)[0]
 
     # Smooth initial guess by smoothing the true field using a Gaussian filter
     from scipy.ndimage import gaussian_filter
 
-    u0 = gaussian_filter(u_true, sigma=5)
+    u0 = gaussian_filter(u_true, sigma=3)
 
     # Forcing term f(x) (zero for simplicity)
-    f = np.zeros((size, size))
+    f = np.ones((size, size))
 
     # Setup the Groundwater equation problem
     groundwater_eq = GroundwaterEquation(size)
 
     # Evaluate the forward operator with the true input field
     p_true = groundwater_eq.eval_fwd_op(f, u_true)
+    p_smooth = groundwater_eq.eval_fwd_op(f, u0)
+
+    # Adjoint test
+    # y1 = A^(-1) x
+    p_fwd = groundwater_eq.eval_fwd_op(p_smooth, u0)
+    # x1 = A^(-T) y
+    lambda_adj = groundwater_eq.eval_adj_op(u0, p_smooth)
+
+    # x1 . x
+    term1 = np.dot(p_smooth.reshape(-1), lambda_adj.reshape(-1))
+    # y1 . y
+    term2 = np.dot(p_fwd.reshape(-1), p_smooth.reshape(-1))
+    print(f"Adjoint test: {term1} = {term2}, ratio = {term1/term2}")
 
     # Use the forward simulation with u_true as the "observed" data
     d_obs = p_true
