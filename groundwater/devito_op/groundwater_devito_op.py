@@ -18,14 +18,14 @@ from devito import (
 
 configuration["log-level"] = "ERROR"
 
-NUM_PSEUDO_TIMESTEPS = 10000
+NUM_PSEUDO_TIMESTEPS = 5000
 
 
 class GroundwaterEquation:
     def __init__(self, size):
         self.size = size
         self.grid = Grid(
-            shape=(size, size), extent=(1.0, 1.0), dtype=np.float64
+            shape=(size, size), extent=(1.0, 1.0), dtype=np.float32
         )
 
         self.p = TimeFunction(name="p", grid=self.grid, space_order=2)
@@ -64,16 +64,16 @@ class GroundwaterEquation:
         # ∂p(x)/∂x1|x1=0 = 0,
         # ∂p(x)/∂x1|x1=1 = 0.
         bc = [
-            # Eq(p[t + 1, x, 0], x * self.grid.spacing[0]),
-            # Eq(p[t + 1, x, y.symbolic_max], 1.0 - x * self.grid.spacing[0]),
-            # Eq(p[t + 1, x, y.symbolic_max + 1], p[t + 1, x, y.symbolic_max]),
-            # Eq(p[t + 1, -1, y], p[t + 1, 0, y]),
-            # Eq(p[t + 1, x.symbolic_max + 1, y], p[t + 1, x.symbolic_max, y]),
+            Eq(p[t + 1, x, 0], x * self.grid.spacing[0]),
+            Eq(p[t + 1, x, y.symbolic_max], 1.0 - x * self.grid.spacing[0]),
+            Eq(p[t + 1, x, y.symbolic_max + 1], p[t + 1, x, y.symbolic_max]),
+            Eq(p[t + 1, -1, y], p[t + 1, 0, y]),
+            Eq(p[t + 1, x.symbolic_max + 1, y], p[t + 1, x.symbolic_max, y]),
             #
-            Eq(p[t + 1, x, 0], 0),
-            Eq(p[t + 1, x, y.symbolic_max], 0),
-            Eq(p[t + 1, 0, y], 0),
-            Eq(p[t + 1, x.symbolic_max, y], 0),
+            # Eq(p[t + 1, x, 0], 0),
+            # Eq(p[t + 1, x, y.symbolic_max], 0),
+            # Eq(p[t + 1, 0, y], 0),
+            # Eq(p[t + 1, x.symbolic_max, y], 0),
         ]
 
         return Operator([update] + bc)
@@ -95,18 +95,18 @@ class GroundwaterEquation:
         # λ(x)|x2=1 = 0,
         # ∂λ(x)/∂x1|x1=0 = ∂λ(x)/∂x1|x1=1.
         bc_adj = [
-            # Eq(lambda_adj[t + 1, x, 0], 0),
-            # Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
-            # Eq(lambda_adj[t + 1, -1, y], lambda_adj[t + 1, 0, y]),
-            # Eq(
-            #     lambda_adj[t + 1, x.symbolic_max + 1, y],
-            #     lambda_adj[t + 1, x.symbolic_max, y],
-            # ),
-            #
             Eq(lambda_adj[t + 1, x, 0], 0),
             Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
-            Eq(lambda_adj[t + 1, 0, y], 0),
-            Eq(lambda_adj[t + 1, x.symbolic_max, y], 0),
+            Eq(lambda_adj[t + 1, -1, y], lambda_adj[t + 1, 0, y]),
+            Eq(
+                lambda_adj[t + 1, x.symbolic_max + 1, y],
+                lambda_adj[t + 1, x.symbolic_max, y],
+            ),
+            #
+            # Eq(lambda_adj[t + 1, x, 0], 0),
+            # Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
+            # Eq(lambda_adj[t + 1, 0, y], 0),
+            # Eq(lambda_adj[t + 1, x.symbolic_max, y], 0),
         ]
 
         return Operator([update_adj] + bc_adj)

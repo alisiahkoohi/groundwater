@@ -108,8 +108,8 @@ if __name__ == "__main__":
     u0 = gaussian_filter(u_true, sigma=5)
 
     # Forcing term f(x) (zero for simplicity)
-    # f = np.zeros((size, size))
-    f = np.ones((size, size))
+    f = np.zeros((size, size))
+    # f = np.ones((size, size))
 
     # Setup the Groundwater equation problem
     groundwater_eq = GroundwaterEquation(size)
@@ -138,12 +138,12 @@ if __name__ == "__main__":
 
     # Perform gradient test
     errors_first_order, errors_second_order = gradient_test(
-        groundwater_eq, u0, f, d_obs, dx, epsilon=epsilon, maxiter=10
+        groundwater_eq, u0, f, d_obs, dx, epsilon=epsilon, maxiter=5
     )
 
     # Make start at error
-    h = [errors_first_order[0] * 0.5**i for i in range(10)]
-    h2 = [errors_second_order[0] * 0.5 ** (2 * i) for i in range(10)]
+    h = [errors_first_order[0] * 0.5**i for i in range(5)]
+    h2 = [errors_second_order[0] * 0.5 ** (2 * i) for i in range(5)]
 
     # Plot the errors (log-log scale)
     plt.semilogy(errors_first_order, label="First-order error", base=2)

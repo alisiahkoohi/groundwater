@@ -14,8 +14,8 @@ def simulate_groundwater_eq(size=256, num_samples=3, threshold=-1):
         u_samples[u_samples < 0] = threshold
 
     # Zero forcing term f(x).
-    # f = np.zeros((size, size))
-    f = np.ones((size, size))
+    f = np.zeros((size, size))
+    # f = np.ones((size, size))
 
     # Setup Groundwater equation problem
     groundwater_eq = GroundwaterEquation(size)
