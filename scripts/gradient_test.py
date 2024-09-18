@@ -96,8 +96,8 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
 
 # Example usage:
 if __name__ == "__main__":
-    size = 128
-    epsilon = 5e0
+    size = 40
+    epsilon = 5e-1
 
     # Randomly sample the true input field and initial guess
     u_true = GaussianRandomField(2, size, alpha=2, tau=4).sample(1)[0]
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # Smooth initial guess by smoothing the true field using a Gaussian filter
     from scipy.ndimage import gaussian_filter
 
-    u0 = gaussian_filter(u_true, sigma=5)
+    u0 = gaussian_filter(u_true, sigma=50)
 
     # Forcing term f(x) (zero for simplicity)
     f = np.zeros((size, size))

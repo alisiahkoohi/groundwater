@@ -18,7 +18,7 @@ from devito import (
 
 configuration["log-level"] = "ERROR"
 
-NUM_PSEUDO_TIMESTEPS = 5000
+NUM_PSEUDO_TIMESTEPS = 50000
 
 
 class GroundwaterEquation:
