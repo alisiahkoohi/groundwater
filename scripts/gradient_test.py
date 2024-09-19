@@ -100,16 +100,16 @@ if __name__ == "__main__":
     epsilon = 5e-1
 
     # Randomly sample the true input field and initial guess
-    u_true = GaussianRandomField(2, size, alpha=2, tau=4).sample(1)[0]
+    u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(2)[0]
 
     # Smooth initial guess by smoothing the true field using a Gaussian filter
     from scipy.ndimage import gaussian_filter
 
-    u0 = gaussian_filter(u_true, sigma=50)
+    u0 = gaussian_filter(u_true, sigma=3)
 
     # Forcing term f(x) (zero for simplicity)
-    f = np.zeros((size, size))
     # f = np.ones((size, size))
+    f = np.zeros((size, size))
 
     # Setup the Groundwater equation problem
     groundwater_eq = GroundwaterEquation(size)

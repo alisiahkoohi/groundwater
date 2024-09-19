@@ -64,10 +64,13 @@ class GroundwaterEquation:
         # ∂p(x)/∂x1|x1=0 = 0,
         # ∂p(x)/∂x1|x1=1 = 0.
         bc = [
+            # p(x)|x2=0 = x1
             Eq(p[t + 1, x, 0], x * self.grid.spacing[0]),
+            # p(x)|x2=1 = 1 - x1
             Eq(p[t + 1, x, y.symbolic_max], 1.0 - x * self.grid.spacing[0]),
-            Eq(p[t + 1, x, y.symbolic_max + 1], p[t + 1, x, y.symbolic_max]),
+            # ∂p(x)/∂x1|x1=0 = 0
             Eq(p[t + 1, -1, y], p[t + 1, 0, y]),
+            # ∂p(x)/∂x1|x1=1 = 0
             Eq(p[t + 1, x.symbolic_max + 1, y], p[t + 1, x.symbolic_max, y]),
             #
             # Eq(p[t + 1, x, 0], 0),
@@ -95,18 +98,22 @@ class GroundwaterEquation:
         # λ(x)|x2=1 = 0,
         # ∂λ(x)/∂x1|x1=0 = ∂λ(x)/∂x1|x1=1.
         bc_adj = [
+            # x1 = 0
             Eq(lambda_adj[t + 1, x, 0], 0),
+            # x1 = 1
             Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
-            Eq(lambda_adj[t + 1, -1, y], lambda_adj[t + 1, 0, y]),
+            # x2 = 0, transpose derivative = 0
+            Eq(lambda_adj[t + 1, 0, y], lambda_adj[t + 1, 1, y]),
+            # x2 = 1, transpose derivative = 0
             Eq(
-                lambda_adj[t + 1, x.symbolic_max + 1, y],
                 lambda_adj[t + 1, x.symbolic_max, y],
+                lambda_adj[t + 1, x.symbolic_max - 1, y],
             ),
             #
-            # Eq(lambda_adj[t + 1, x, 0], 0),
-            # Eq(lambda_adj[t + 1, x, y.symbolic_max], 0),
-            # Eq(lambda_adj[t + 1, 0, y], 0),
-            # Eq(lambda_adj[t + 1, x.symbolic_max, y], 0),
+            # Eq(p[t + 1, x, 0], 0),
+            # Eq(p[t + 1, x, y.symbolic_max], 0),
+            # Eq(p[t + 1, 0, y], 0),
+            # Eq(p[t + 1, x.symbolic_max, y], 0),
         ]
 
         return Operator([update_adj] + bc_adj)
@@ -145,7 +152,7 @@ class GroundwaterEquation:
 
         # e^u ∇λ · ∇p
         t = self.grid.stepping_dim
-        grad_lambda = grad(lambda_adj, shift=-0.5)._subs(t, 1)
+        grad_lambda = grad(lambda_adj, shift=0.5)._subs(t, 1)
         grad_p = grad(p_fwd, shift=0.5)._subs(t, 1)
 
         gradient_eq = Eq(
