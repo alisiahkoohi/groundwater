@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from scipy.ndimage import gaussian_filter
 
 from groundwater.devito_op import GroundwaterEquation
 from groundwater.utils import GaussianRandomField, plot_fields
@@ -11,20 +12,22 @@ np.random.seed(2)
 # Example usage.
 if __name__ == "__main__":
     size = 32
-    num_iterations = 120  # Number of gradient descent iterations
-    learning_rate = 15.0  # Learning rate for gradient descent
+    num_iterations = 250  # Number of gradient descent iterations
+    learning_rate = 40.0  # Learning rate for gradient descent
 
     # Sample random fields for u(x).
     u_true = (
-        GaussianRandomField(2, size, alpha=3, tau=4)
+        GaussianRandomField(2, size, alpha=2, tau=4)
         .sample(1)[0]
         .astype(np.float32)
     )
 
-    # Smooth initial guess by smoothing the true field using a Gaussian filter
-    from scipy.ndimage import gaussian_filter
-
-    u0 = gaussian_filter(u_true, sigma=1).astype(np.float32)
+    # Choose initial guess to be sample from a much smoother field.
+    u0 = (
+        GaussianRandomField(2, size, alpha=4, tau=3)
+        .sample(1)[0]
+        .astype(np.float32)
+    )
     u0_backup = u0.copy()
 
     # Zero forcing term f(x).
@@ -69,6 +72,9 @@ if __name__ == "__main__":
         residual_norms.append(residual_norm)
         error_norms.append(error_norm)
 
+        if (i + 1) % 100 == 0:
+            learning_rate *= 0.9
+
         # Optionally, print progress
         if (i + 1) % 1 == 0 or i == num_iterations - 1:
             print(
@@ -83,13 +89,13 @@ if __name__ == "__main__":
         [np.exp(_) for _ in [u_true, u0, u0_backup]],
         ["True u(x)", "Final u(x) after Gradient Descent", "Initial u(x)"],
         "Input Fields u(x)",
-        contour=True,
+        contour=False,
     )
     plot_fields(
         [p, p_fwd_final.data[0], p_fwd_backup],
         ["True p(x)", "Final p(x) after Gradient Descent", "Initial p(x)"],
         "Output Fields p(x)",
-        contour=True,
+        contour=False,
     )
 
     # Plot residual norm

@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import gaussian_filter
+
 from groundwater.devito_op import GroundwaterEquation
 from groundwater.utils import GaussianRandomField
 
@@ -96,19 +98,16 @@ def gradient_test(groundwater_eq, u0, f, d_obs, dx, epsilon=1e-2, maxiter=10):
 
 # Example usage:
 if __name__ == "__main__":
-    size = 40
+    size = 128
     epsilon = 5e-1
 
     # Randomly sample the true input field and initial guess
-    u_true = GaussianRandomField(2, size, alpha=3, tau=3).sample(2)[0]
+    u_true = GaussianRandomField(2, size, alpha=2, tau=4).sample(2)[0]
 
     # Smooth initial guess by smoothing the true field using a Gaussian filter
-    from scipy.ndimage import gaussian_filter
-
     u0 = gaussian_filter(u_true, sigma=3)
 
-    # Forcing term f(x) (zero for simplicity)
-    # f = np.ones((size, size))
+    # Forcing term f(x).
     f = np.zeros((size, size))
 
     # Setup the Groundwater equation problem
