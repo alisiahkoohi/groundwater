@@ -3,46 +3,68 @@ import numpy as np
 from groundwater.devito_op import GroundwaterEquation
 from groundwater.utils import GaussianRandomField, plot_fields
 
-# Number of pseudo-timesteps to simulate the groundwater equation. For larger
-# input sizes, this number should be increased to ensure convergence.
-NUM_PSEUDO_TIMESTEPS = 50000
+# Number of pseudo-timesteps to simulate the groundwater equation. This should
+# be increased for larger input sizes to ensure the forward operator converges.
+NUM_PSEUDO_TIMESTEPS: int = 50000
 
 
-def simulate_groundwater_eq(size=256, num_samples=3):
-    # Sample random fields for u(x).
-    u_samples = GaussianRandomField(2, size, alpha=2, tau=4).sample(num_samples)
+def simulate_groundwater_eq(size: int = 256, num_samples: int = 3) -> None:
+    """
+    Simulate the groundwater equation using random input fields sampled from a
+    Gaussian Random Field (GRF) and evaluate the forward operator for each
+    input.
 
-    # Zero forcing term f(x).
-    f = np.zeros((size, size))
+    Parameters:
+        size: The size of the grid for the input fields (u(x)).
+        num_samples: The number of random input field samples to generate.
+    """
 
-    # Setup Groundwater equation problem
+    # Step 1: Sample random input fields from a Gaussian Random Field (GRF)
+    u_samples: list[np.ndarray] = GaussianRandomField(
+        2, size, alpha=2, tau=4
+    ).sample(num_samples)
+
+    # Step 2: Set up the zero forcing term f(x)
+    f: np.ndarray = np.zeros((size, size))
+
+    # Step 3: Initialize the GroundwaterEquation instance
     groundwater_eq = GroundwaterEquation(size)
 
-    # Evaluate the forward operator for each input field.
-    p = [
+    # Step 4: Evaluate the forward operator for each input field u(x) using the
+    # groundwater equation
+    p: list[np.ndarray] = [
         groundwater_eq.eval_fwd_op(f, u, time_steps=NUM_PSEUDO_TIMESTEPS)
         for u in u_samples
     ]
 
-    # Print norms of the outputs
+    # Step 5: Print the norm of each output field (p(x)) to check the magnitude
+    # of results
     for i in range(num_samples):
-        print(f"Output {i+1} norm: {np.linalg.norm(p[i])}")
+        print(f"Output {i + 1} norm: {np.linalg.norm(p[i])}")
 
-    # Plot results.
+    # Step 6: Plot the input fields (u(x)) for visualization
     plot_fields(
-        [np.exp(_) for _ in u_samples],
-        [f"Input u(x) {i+1}" for i in range(num_samples)],
+        [
+            np.exp(_) for _ in u_samples
+        ],  # Apply exponential to inputs for better visualization
+        [f"Input u(x) {i + 1}" for i in range(num_samples)],
         "Input Fields u(x)",
-        contour=False,
+        contour=False,  # Disable contour plotting for input fields
     )
+
+    # Step 7: Plot the output fields (p(x)) from the forward operator
     plot_fields(
         p,
-        [f"Output p(x) {i+1}" for i in range(num_samples)],
+        [f"Output p(x) {i + 1}" for i in range(num_samples)],
         "Output Fields p(x)",
-        contour=True,
+        contour=True,  # Enable contour plotting for output fields
     )
+
+    # Step 8: Show the plotted figures
     plt.show()
 
 
+# Main entry point for the simulation
 if __name__ == "__main__":
+    # Call the function to simulate the groundwater equation
     simulate_groundwater_eq(size=256, num_samples=3)
