@@ -1,11 +1,16 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from groundwater.devito_op import GroundwaterEquation
+import torch
+
 from groundwater.utils import GaussianRandomField, plot_fields
+from groundwater.devito_op import GroundwaterModel
+
+matplotlib.use("TkAgg")
 
 # Number of pseudo-timesteps to simulate the groundwater equation. This should
 # be increased for larger input sizes to ensure the forward operator converges.
-NUM_PSEUDO_TIMESTEPS: int = 50000
+NUM_PSEUDO_TIMESTEPS: int = 100000
 
 
 def simulate_groundwater_eq(size: int = 256, num_samples: int = 3) -> None:
@@ -21,24 +26,29 @@ def simulate_groundwater_eq(size: int = 256, num_samples: int = 3) -> None:
 
     # Step 1: Sample random input fields from a Gaussian Random Field (GRF)
     u_samples: list[np.ndarray] = GaussianRandomField(
-        2, size, alpha=2, tau=4
+        2,
+        size,
+        alpha=2,
+        tau=4,
     ).sample(num_samples)
 
     # Step 2: Set up the zero forcing term f(x)
-    f: np.ndarray = np.zeros((size, size))
+    f: torch.Tensor = torch.zeros((size, size), dtype=torch.float32)
 
-    # Step 3: Initialize the GroundwaterEquation instance
-    groundwater_eq = GroundwaterEquation(size)
+    # Step 3: Initialize the GroundwaterModel instance
+    groundwater_model = GroundwaterModel(size)
 
     # Step 4: Evaluate the forward operator for each input field u(x) using the
-    # groundwater equation
-    p: list[np.ndarray] = [
-        groundwater_eq.eval_fwd_op(f, u, time_steps=NUM_PSEUDO_TIMESTEPS)
-        for u in u_samples
-    ]
+    # groundwater model
+    with torch.no_grad():
+        p: list[torch.Tensor] = [
+            groundwater_model(torch.tensor(u, dtype=torch.float32), f)
+            .detach()
+            .numpy()
+            for u in u_samples
+        ]
 
     # Step 5: Print the norm of each output field (p(x)) to check the magnitude
-    # of results
     for i in range(num_samples):
         print(f"Output {i + 1} norm: {np.linalg.norm(p[i])}")
 

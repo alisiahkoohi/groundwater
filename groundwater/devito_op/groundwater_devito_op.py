@@ -1,6 +1,7 @@
 # Adapted from https://github.com/devitocodes/devito/blob/master/examples/cfd/09_Darcy_flow_equation.ipynb
 
 import numpy as np
+import torch
 from devito import (
     Eq,
     Function,
@@ -267,3 +268,52 @@ class GroundwaterEquation:
         op_gradient()
 
         return self.gradient.data
+
+
+class GroundwaterLayer(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, u, f, groundwater_eq):
+        # Convert PyTorch tensors to NumPy arrays
+        u_np = u.detach().cpu().numpy()
+        f_np = f.detach().cpu().numpy()
+
+        # Run the forward model
+        p_fwd = groundwater_eq.eval_fwd_op(f_np, u_np, return_array=False)
+
+        # Save variables needed for backward pass
+        ctx.save_for_backward(u, f)
+        ctx.groundwater_eq = groundwater_eq
+        ctx.p_fwd = p_fwd
+
+        # Convert the result back to a PyTorch tensor
+        return torch.from_numpy(p_fwd.data[0]).to(u.device).clone()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        u, f = ctx.saved_tensors
+        groundwater_eq = ctx.groundwater_eq
+        p_fwd = ctx.p_fwd
+
+        # Convert grad_output to NumPy array
+        grad_output_np = grad_output.cpu().numpy()
+
+        # Compute the gradient using the saved variables
+        gradient = groundwater_eq.compute_gradient(
+            u.cpu().numpy(), grad_output_np, p_fwd
+        )
+
+        # Convert the gradient back to a PyTorch tensor
+        grad_u = torch.from_numpy(gradient).to(u.device)
+
+        # Return gradients for each input tensor (None for groundwater_eq as
+        # it's not a tensor)
+        return grad_u, None, None
+
+
+class GroundwaterModel(torch.nn.Module):
+    def __init__(self, size):
+        super().__init__()
+        self.groundwater_eq = GroundwaterEquation(size)
+
+    def forward(self, u, f):
+        return GroundwaterLayer.apply(u, f, self.groundwater_eq)

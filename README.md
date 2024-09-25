@@ -1,4 +1,4 @@
-<h1 align="center">Groundwater flow equation: Finite-difference forward, adjoint, and gradient operators</h1>
+<h2 align="center">Groundwater flow equation: Finite-difference forward, adjoint, and gradient operators with PyTorch wrapper</h2>
 
 This repository contains the code for implementing the finite-difference
 forward, adjoint, and gradient operators for the groundwater flow equation.
